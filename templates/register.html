@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account - Breakout</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --accent: #4ade80;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --error: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .sub { color: var(--muted); margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 0.9rem; }
+    input {
+      display: block;
+      width: 100%;
+      margin-top: 0.3rem;
+      padding: 0.65rem 0.75rem;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: #052e16;
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 1.4rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 0.25rem;
+    }
+    button:hover { background: #6ee7a0; }
+    .flash { padding: 0.6rem 0.8rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .flash.error { background: rgba(248, 113, 113, 0.12); color: var(--error); border: 1px solid rgba(248, 113, 113, 0.35); }
+    .flash.success { background: rgba(74, 222, 128, 0.12); color: var(--accent); border: 1px solid rgba(74, 222, 128, 0.35); }
+    .alt { margin-top: 1.25rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧱 Breakout</h1>
+    <p class="sub">Create your account</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <p class="flash {{ category }}">{{ message }}</p>
+      {% endfor %}
+    {% endwith %}
+    <form method="post">
+      <label>Username (3-20 characters, letters/numbers)
+        <input name="username" autocomplete="username" minlength="3" maxlength="20" required />
+      </label>
+      <label>Password (at least 6 characters)
+        <input type="password" name="password" autocomplete="new-password" minlength="6" required />
+      </label>
+      <label>Confirm password
+        <input type="password" name="confirm" autocomplete="new-password" minlength="6" required />
+      </label>
+      <button type="submit">Create Account</button>
+    </form>
+    <p class="alt">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+  </div>
+</body>
+</html>

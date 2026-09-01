@@ -1,0 +1,14 @@
+# Virtual environment
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Web app data and secrets
+*.db
+.secret_key
+.env
+
+# Deployment artifacts
+*.zip
