@@ -1,10 +1,19 @@
-"""Breakout web app with user accounts stored in SQLite.
+"""Rainbow Blocks web app with email accounts and supervisor management.
 
 Run with:   python app.py
 Then open:  http://127.0.0.1:5000
+
+Roles:
+- player     - registers with email, plays, and saves a best score
+- supervisor - sees every player and can reset scores or remove accounts
+
+To make a specific email register as a supervisor, set the environment
+variable SUPERVISOR_EMAIL before the account is created, or run
+python promote_supervisor.py email@example.com afterwards.
 """
 
 import os
+import re
 import secrets
 import sqlite3
 from datetime import datetime, timezone
@@ -60,16 +69,29 @@ def init_db():
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
             best_score INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            email TEXT,
+            role TEXT NOT NULL DEFAULT 'player'
         );
         """
     )
+    # Migrate databases created before email/role existed.
+    columns = [row[1] for row in db.execute("PRAGMA table_info(users)")]
+    if "email" not in columns:
+        db.execute("ALTER TABLE users ADD COLUMN email TEXT")
+    if "role" not in columns:
+        db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
+    db.execute("UPDATE users SET email = username || '@players.local' WHERE email IS NULL OR email = ''")
+    try:
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+    except sqlite3.IntegrityError:
+        pass
     db.commit()
     db.close()
 
 
-def get_user_by_username(username):
-    return get_db().execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+def get_user_by_email(email):
+    return get_db().execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
 
 
 def get_user_by_id(user_id):
@@ -83,6 +105,21 @@ def current_user():
     return get_user_by_id(user_id)
 
 
+def is_supervisor(user):
+    return user is not None and user["role"] == "supervisor"
+
+
+def supervisor_guard():
+    """Return (user, None) for supervisors, else (None, redirect)."""
+    user = current_user()
+    if user is None:
+        return None, redirect(url_for("login"))
+    if not is_supervisor(user):
+        flash("You need supervisor access for that.", "error")
+        return None, redirect(url_for("index"))
+    return user, None
+
+
 @app.route("/")
 def index():
     user = current_user()
@@ -91,30 +128,62 @@ def index():
     return render_template("game.html", user=user)
 
 
+@app.route("/leaderboard")
+def leaderboard():
+    user = current_user()
+    if user is None:
+        return redirect(url_for("login"))
+    db = get_db()
+    top = db.execute(
+        "SELECT username, email, best_score FROM users WHERE role = 'player' "
+        "ORDER BY best_score DESC, id ASC LIMIT 10"
+    ).fetchall()
+    better = db.execute(
+        "SELECT COUNT(*) FROM users WHERE role = 'player' AND best_score > ?",
+        (user["best_score"],),
+    ).fetchone()[0]
+    my_rank = better + 1
+    return render_template("leaderboard.html", user=user, top=top, my_rank=my_rank)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if current_user() is not None:
         return redirect(url_for("index"))
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm = request.form.get("confirm", "")
         error = None
 
-        if not (3 <= len(username) <= 20) or not username.isalnum():
-            error = "Username must be 3-20 characters, letters and numbers only."
+        if not (1 <= len(name) <= 30):
+            error = "Please enter a name (up to 30 characters)."
+        elif not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            error = "Please enter a valid email address."
         elif len(password) < 6:
             error = "Password must be at least 6 characters."
         elif password != confirm:
             error = "Passwords do not match."
-        elif get_user_by_username(username) is not None:
-            error = "That username is already taken."
+        elif get_user_by_email(email) is not None:
+            error = "An account with that email already exists."
         else:
+            role = (
+                "supervisor"
+                if email == os.environ.get("SUPERVISOR_EMAIL", "").strip().lower()
+                else "player"
+            )
             db = get_db()
             db.execute(
-                "INSERT INTO users (username, password_hash, best_score, created_at) "
-                "VALUES (?, ?, 0, ?)",
-                (username, generate_password_hash(password), datetime.now(timezone.utc).isoformat()),
+                "INSERT INTO users (username, email, password_hash, best_score, role, created_at) "
+                "VALUES (?, ?, ?, 0, ?, ?)",
+                (
+                    name,
+                    email,
+                    generate_password_hash(password),
+                    role,
+                    datetime.now(timezone.utc).isoformat(),
+                ),
             )
             db.commit()
             flash("Account created - you can log in now.", "success")
@@ -128,16 +197,73 @@ def login():
     if current_user() is not None:
         return redirect(url_for("index"))
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-        user = get_user_by_username(username)
+        user = get_user_by_email(email)
         if user is None or not check_password_hash(user["password_hash"], password):
-            flash("Invalid username or password.", "error")
+            flash("Invalid email or password.", "error")
         else:
             session.clear()
             session["user_id"] = user["id"]
             return redirect(url_for("index"))
     return render_template("login.html")
+
+
+@app.route("/manage")
+def manage():
+    user, redirect_to = supervisor_guard()
+    if redirect_to is not None:
+        return redirect_to
+    users = get_db().execute(
+        "SELECT id, username, email, best_score, role, created_at FROM users "
+        "ORDER BY (role = 'supervisor') DESC, best_score DESC"
+    ).fetchall()
+    return render_template("manage.html", user=user, users=users)
+
+
+@app.route("/manage/<int:user_id>/reset", methods=["POST"])
+def reset_score(user_id):
+    _, redirect_to = supervisor_guard()
+    if redirect_to is not None:
+        return redirect_to
+    db = get_db()
+    db.execute("UPDATE users SET best_score = 0 WHERE id = ?", (user_id,))
+    db.commit()
+    flash("Score reset.", "success")
+    return redirect(url_for("manage"))
+
+
+@app.route("/manage/<int:user_id>/role", methods=["POST"])
+def toggle_role(user_id):
+    user, redirect_to = supervisor_guard()
+    if redirect_to is not None:
+        return redirect_to
+    if user_id == user["id"]:
+        flash("You cannot change your own role.", "error")
+        return redirect(url_for("manage"))
+    db = get_db()
+    target = db.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if target is not None:
+        new_role = "player" if target["role"] == "supervisor" else "supervisor"
+        db.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
+        db.commit()
+        flash("Role updated.", "success")
+    return redirect(url_for("manage"))
+
+
+@app.route("/manage/<int:user_id>/delete", methods=["POST"])
+def delete_user(user_id):
+    user, redirect_to = supervisor_guard()
+    if redirect_to is not None:
+        return redirect_to
+    if user_id == user["id"]:
+        flash("You cannot delete your own account.", "error")
+        return redirect(url_for("manage"))
+    db = get_db()
+    db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    db.commit()
+    flash("Account removed.", "success")
+    return redirect(url_for("manage"))
 
 
 @app.route("/logout", methods=["POST"])

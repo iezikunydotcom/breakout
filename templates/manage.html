@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Manage Players{% endblock %}
+{% block content %}
+  <h2>Manage Players</h2>
+  <p class="note">Reset scores, change roles, or remove accounts. You are signed in as {{ user.email }}.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Player</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th class="num">Best Score</th>
+        <th>Joined</th>
+        <th class="num">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            {{ u.role }}
+            {% if u.role == 'supervisor' %}<span class="badge">Supervisor</span>{% endif %}
+          </td>
+          <td class="num">{{ u.best_score }}</td>
+          <td>{{ u.created_at[:10] }}</td>
+          <td class="num actions">
+            <form method="post" action="{{ url_for('reset_score', user_id=u.id) }}">
+              <button class="btn" type="submit">Reset</button>
+            </form>
+            <form method="post" action="{{ url_for('toggle_role', user_id=u.id) }}">
+              <button class="btn" type="submit" {% if u.id == user.id %}disabled{% endif %}>
+                {{ 'Make player' if u.role == 'supervisor' else 'Make supervisor' }}
+              </button>
+            </form>
+            <form method="post" action="{{ url_for('delete_user', user_id=u.id) }}"
+                  onsubmit="return confirm('Delete {{ u.username }}? This cannot be undone.');">
+              <button class="btn danger" type="submit" {% if u.id == user.id %}disabled{% endif %}>Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

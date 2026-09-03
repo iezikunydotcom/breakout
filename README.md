@@ -25,7 +25,27 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open http://127.0.0.1:5000 and register an account.
+Then open http://127.0.0.1:5000 and register with your name and email.
+
+### Roles
+
+- **Player** - registers with email, plays, and saves a best score.
+- **Supervisor** - sees every account and can reset scores, change roles, or
+  remove players.
+
+To make a specific email register as a supervisor, set the `SUPERVISOR_EMAIL`
+environment variable before that account is created. To promote an existing
+account, run:
+
+```powershell
+python promote_supervisor.py player@example.com
+```
+
+### Pages
+
+- `/` - the game
+- `/leaderboard` - top players by best score
+- `/manage` - supervisor dashboard (reset scores, roles, delete accounts)
 
 ## Deploy online (free)
 

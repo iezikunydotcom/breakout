@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+  <h2>Leaderboard</h2>
+  <p class="note">Your best: {{ user.best_score }} (rank #{{ my_rank }})</p>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Player</th>
+        <th class="num">Best Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in top %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ row.username }} <small style="color:var(--muted)">&middot; {{ row.email }}</small></td>
+          <td class="num">{{ row.best_score }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3">No scores yet - be the first!</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

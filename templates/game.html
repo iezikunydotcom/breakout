@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Breakout</title>
+  <title>Rainbow Blocks</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -26,10 +26,48 @@
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 1rem;
     }
+
+    .topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.7rem 1.2rem;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .brand { font-weight: 700; }
+
+    .nav, .userchip { display: flex; align-items: center; gap: 0.9rem; }
+    .nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
+    .nav a:hover { color: var(--accent); }
+    .userchip { color: var(--muted); font-size: 0.9rem; }
+    .userchip .name { color: var(--text); font-weight: 600; }
+    .badge {
+      background: var(--accent);
+      color: #052e16;
+      border-radius: 999px;
+      padding: 0.12rem 0.55rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .flash {
+      width: 100%;
+      max-width: 560px;
+      margin-top: 1rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .flash.error { background: rgba(248, 113, 113, 0.12); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.35); }
+    .flash.success { background: rgba(74, 222, 128, 0.12); color: var(--accent); border: 1px solid rgba(74, 222, 128, 0.35); }
 
     .game {
       background: var(--panel);
@@ -154,22 +192,6 @@
       color: var(--text);
     }
 
-    .btn-group {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    .logout-form {
-      margin: 0;
-    }
-
-    .logout-btn:hover {
-      background: rgba(248, 113, 113, 0.15);
-      border-color: rgba(248, 113, 113, 0.4);
-      color: #f87171;
-    }
-
     @media (max-width: 480px) {
       .scores {
         flex-direction: column;
@@ -180,11 +202,30 @@
   </style>
 </head>
 <body>
+  <nav class="topbar">
+    <span class="brand">🧱 Rainbow Blocks</span>
+    <div class="nav">
+      <a href="{{ url_for('index') }}">Play</a>
+      <a href="{{ url_for('leaderboard') }}">Leaderboard</a>
+      {% if user.role == 'supervisor' %}<a href="{{ url_for('manage') }}">Manage Players</a>{% endif %}
+    </div>
+    <div class="userchip">
+      <span class="name">{{ user.username }}</span>
+      {% if user.role == 'supervisor' %}<span class="badge">Supervisor</span>{% endif %}
+      <form method="post" action="{{ url_for('logout') }}">
+        <button class="muted-btn" type="submit">Log Out</button>
+      </form>
+    </div>
+  </nav>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <p class="flash {{ category }}">{{ message }}</p>
+    {% endfor %}
+  {% endwith %}
   <div class="game">
     <div class="header">
-      <div class="title">Breakout</div>
+      <div class="title">Rainbow Blocks</div>
       <div class="scores">
-        <span>Player: <strong>{{ user.username }}</strong></span>
         <span>Score: <strong id="score">0</strong></span>
         <span>Best: <strong id="best">{{ user.best_score }}</strong></span>
         <span>Lives: <strong id="lives">3</strong></span>
@@ -194,7 +235,7 @@
     <div class="board-wrap">
       <canvas id="board" width="480" height="640"></canvas>
       <div id="overlay" class="overlay">
-        <h2 id="overlay-title">Breakout</h2>
+        <h2 id="overlay-title">Rainbow Blocks</h2>
         <p id="overlay-message">Break all the rainbow bricks with the ball. Don't let it fall!</p>
         <button id="start-btn">Start Game</button>
       </div>
@@ -205,12 +246,7 @@
         <strong>Mouse</strong> or <strong>arrow keys</strong> to move<br />
         <strong>P</strong> to pause - <strong>R</strong> to restart
       </p>
-      <div class="btn-group">
-        <button id="pause-btn" class="muted-btn" disabled>Pause</button>
-        <form class="logout-form" method="post" action="{{ url_for('logout') }}">
-          <button type="submit" class="muted-btn logout-btn">Log Out</button>
-        </form>
-      </div>
+      <button id="pause-btn" class="muted-btn" disabled>Pause</button>
     </div>
   </div>
 
