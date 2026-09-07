@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧱</text></svg>" />
   <title>Rainbow Blocks</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --border: #334155;
-      --accent: #4ade80;
+      --bg: #0b1020;
+      --panel: rgba(20, 29, 48, 0.82);
+      --border: rgba(148, 163, 184, 0.18);
       --text: #e2e8f0;
       --muted: #94a3b8;
+      --accent: #4ade80;
+      --accent-2: #a78bfa;
     }
 
     * {
@@ -21,193 +24,321 @@
     }
 
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       min-height: 100vh;
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(1000px 600px at 15% -10%, rgba(167, 139, 250, 0.16), transparent 60%),
+        radial-gradient(900px 600px at 110% 110%, rgba(74, 222, 128, 0.12), transparent 60%),
+        radial-gradient(700px 500px at 85% -5%, rgba(56, 189, 248, 0.1), transparent 55%),
+        var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
-    }
-
-    .game {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
       padding: 1.25rem;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-      max-width: 560px;
-      width: 100%;
     }
 
-    .header {
+    .shell {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1rem;
+      gap: 0.9rem;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
     }
 
-    .title {
+    .brand {
       font-size: 1.35rem;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: -0.01em;
     }
 
-    .scores {
+    .brand .grad,
+    .overlay h2.grad {
+      background: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #38bdf8, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .pills {
       display: flex;
-      gap: 0.75rem;
-      font-size: 0.9rem;
+      gap: 0.45rem;
+    }
+
+    .pill {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      padding: 0.4rem 0.7rem;
+      min-width: 62px;
+    }
+
+    .pill .label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--muted);
     }
 
-    .scores strong {
-      color: var(--text);
+    .pill strong {
+      font-size: 1.05rem;
       font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .stage {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      border-radius: 20px;
+      padding: 0.85rem;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .board-wrap {
       position: relative;
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
-      background: #0b1220;
+      background: #070b16;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08), 0 0 34px rgba(74, 222, 128, 0.06);
     }
 
     canvas {
       display: block;
       width: 100%;
       aspect-ratio: 3 / 4;
+      touch-action: none;
     }
 
     .overlay {
       position: absolute;
       inset: 0;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.9rem;
-      background: rgba(11, 18, 32, 0.82);
-      text-align: center;
-      padding: 1.5rem;
+      background: rgba(7, 11, 22, 0.78);
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.22s ease-out;
+      padding: 1.25rem;
     }
 
     .overlay.hidden {
       display: none;
     }
 
+    .overlay-inner {
+      text-align: center;
+      max-width: 34ch;
+      animation: riseIn 0.28s ease-out;
+    }
+
+    .overlay .eyebrow {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+      font-weight: 700;
+    }
+
     .overlay h2 {
-      font-size: 1.5rem;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.55rem;
     }
 
     .overlay p {
       color: var(--muted);
-      max-width: 34ch;
-      line-height: 1.5;
+      line-height: 1.55;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
     }
 
-    .controls {
+    .badge-new {
+      display: none;
+      margin: 0 auto 0.7rem;
+      width: fit-content;
+      background: linear-gradient(90deg, #fbbf24, #f87171);
+      color: #1f1205;
+      font-weight: 800;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      box-shadow: 0 0 22px rgba(251, 191, 36, 0.35);
+    }
+
+    .badge-new.show {
+      display: block;
+      animation: pop 0.3s ease-out;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 800;
+      font-family: inherit;
+      transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4ade80, #22d3ee);
+      color: #052016;
+      font-size: 1.02rem;
+      padding: 0.8rem 2rem;
+      box-shadow: 0 8px 26px rgba(74, 222, 128, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(74, 222, 128, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.55rem 1.1rem;
+      font-size: 0.9rem;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      background: rgba(148, 163, 184, 0.1);
+    }
+
+    .foot {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      margin-top: 1rem;
+      margin-top: 0.85rem;
+      flex-wrap: wrap;
     }
 
     .hint {
       color: var(--muted);
-      font-size: 0.85rem;
-      line-height: 1.5;
+      font-size: 0.82rem;
+      line-height: 1.7;
     }
 
-    button {
-      background: var(--accent);
-      color: #052e16;
-      border: none;
-      border-radius: 10px;
-      padding: 0.7rem 1.4rem;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.08s ease, background 0.15s ease;
-    }
-
-    button:hover {
-      background: #6ee7a0;
-    }
-
-    button:active {
-      transform: scale(0.97);
-    }
-
-    .muted-btn {
-      background: transparent;
-      color: var(--muted);
+    .kbd {
+      display: inline-block;
+      background: rgba(148, 163, 184, 0.12);
       border: 1px solid var(--border);
-      padding: 0.5rem 1rem;
-      font-size: 0.9rem;
-    }
-
-    .muted-btn:hover {
-      background: var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 0.05rem 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text);
+      font-family: inherit;
     }
 
-    .btn-group {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
+    .popup {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-weight: 800;
+      font-size: 1rem;
+      color: #f8fafc;
+      text-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+      z-index: 3;
     }
 
-    @media (max-width: 480px) {
-      .scores {
-        flex-direction: column;
-        gap: 0.15rem;
-        text-align: right;
-      }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      70% { transform: scale(1.12); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translate(-50%, -50%); }
+      100% { opacity: 0; transform: translate(-50%, -180%); }
+    }
+
+    @media (max-width: 430px) {
+      .top { justify-content: center; }
+      .brand { width: 100%; text-align: center; }
     }
   </style>
 </head>
 <body>
-  <div class="game">
-    <div class="header">
-      <div class="title">Rainbow Blocks</div>
-      <div class="scores">
-        <span>Score: <strong id="score">0</strong></span>
-        <span>Best: <strong id="best">0</strong></span>
-        <span>Lives: <strong id="lives">3</strong></span>
+  <main class="shell">
+    <header class="top">
+      <h1 class="brand"><span class="grad">Rainbow Blocks</span></h1>
+      <div class="pills">
+        <div class="pill"><span class="label">Score</span><strong id="score">0</strong></div>
+        <div class="pill"><span class="label">Best</span><strong id="best">0</strong></div>
+        <div class="pill"><span class="label">Lives</span><strong id="lives">3</strong></div>
       </div>
-    </div>
+    </header>
 
-    <div class="board-wrap">
-      <canvas id="board" width="480" height="640"></canvas>
-      <div id="overlay" class="overlay">
-        <h2 id="overlay-title">Rainbow Blocks</h2>
-        <p id="overlay-message">Break all the rainbow bricks with the ball. Don't let it fall!</p>
-        <button id="start-btn">Start Game</button>
+    <section class="stage">
+      <div id="board-wrap" class="board-wrap">
+        <canvas id="board" width="480" height="640"></canvas>
+        <div id="overlay" class="overlay">
+          <div class="overlay-inner">
+            <div id="eyebrow" class="eyebrow">Arcade Classic</div>
+            <h2 id="overlay-title" class="grad">Rainbow Blocks</h2>
+            <p id="overlay-message">Guide the ball and smash every rainbow brick. You have three lives - don't let the ball drop!</p>
+            <div id="new-badge" class="badge-new">New Best!</div>
+            <button id="start-btn" class="btn btn-primary">Start Game</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <p class="hint">
-        <strong>Mouse</strong> or <strong>arrow keys</strong> to move<br />
-        <strong>P</strong> to pause - <strong>R</strong> to restart
-      </p>
-      <button id="pause-btn" class="muted-btn" disabled>Pause</button>
-    </div>
-  </div>
+      <div class="foot">
+        <p class="hint">
+          <span class="kbd">Mouse</span> or <span class="kbd">←</span> <span class="kbd">→</span> to move<br />
+          <span class="kbd">P</span> pause &middot; <span class="kbd">R</span> restart
+        </p>
+        <button id="pause-btn" class="btn btn-ghost" disabled>Pause</button>
+      </div>
+    </section>
+  </main>
 
   <script>
     (() => {
       const canvas = document.getElementById("board");
       const ctx = canvas.getContext("2d");
+      const boardWrap = document.getElementById("board-wrap");
       const W = canvas.width;
       const H = canvas.height;
 
       const overlay = document.getElementById("overlay");
+      const eyebrowEl = document.getElementById("eyebrow");
       const overlayTitle = document.getElementById("overlay-title");
       const overlayMessage = document.getElementById("overlay-message");
+      const newBadge = document.getElementById("new-badge");
       const startBtn = document.getElementById("start-btn");
       const pauseBtn = document.getElementById("pause-btn");
       const scoreEl = document.getElementById("score");
@@ -237,6 +368,7 @@
       let lives = MAX_LIVES;
       let best = Number(localStorage.getItem("rainbow-blocks-best") || 0);
       let state = "start"; // start | running | paused | over | won
+      let newBestThisRun = false;
       let rafId = null;
 
       bestEl.textContent = best;
@@ -263,15 +395,58 @@
         ballDy = -BALL_SPEED;
       }
 
+      function showOverlay(eyebrow, title, message, button, showBadge) {
+        eyebrowEl.textContent = eyebrow;
+        overlayTitle.textContent = title;
+        overlayMessage.textContent = message;
+        startBtn.textContent = button;
+        newBadge.classList.toggle("show", Boolean(showBadge));
+        overlay.classList.remove("hidden");
+      }
+
+      function hideOverlay() {
+        overlay.classList.add("hidden");
+      }
+
+      function renderOverlay() {
+        if (state === "start") {
+          showOverlay(
+            "Arcade Classic",
+            "Rainbow Blocks",
+            "Guide the ball and smash every rainbow brick. You have three lives - don't let the ball drop!",
+            "Start Game",
+            false
+          );
+        } else if (state === "paused") {
+          showOverlay("Take a breath", "Paused", "Press Resume or P to keep playing.", "Resume", false);
+        } else if (state === "over") {
+          showOverlay(
+            "Nice try",
+            "Game Over",
+            "You scored " + score + " points. Don't let the ball fall!",
+            "Play Again",
+            newBestThisRun
+          );
+        } else if (state === "won") {
+          showOverlay(
+            "Incredible",
+            "You Win!",
+            "You cleared every brick with " + score + " points!",
+            "Play Again",
+            newBestThisRun
+          );
+        }
+      }
+
       function newGame() {
         score = 0;
         lives = MAX_LIVES;
+        newBestThisRun = false;
         paddleX = W / 2 - PADDLE_W / 2;
         scoreEl.textContent = "0";
         livesEl.textContent = lives;
         buildBricks();
         resetBall();
-        draw();
       }
 
       function startGame() {
@@ -279,40 +454,52 @@
         state = "running";
         pauseBtn.disabled = false;
         pauseBtn.textContent = "Pause";
-        overlay.classList.add("hidden");
+        hideOverlay();
         if (!rafId) rafId = requestAnimationFrame(loop);
       }
 
-      function togglePause() {
-        if (state === "running") {
-          state = "paused";
-          pauseBtn.textContent = "Resume";
-        } else if (state === "paused") {
-          state = "running";
-          pauseBtn.textContent = "Pause";
+      function setPaused(paused) {
+        state = paused ? "paused" : "running";
+        pauseBtn.textContent = paused ? "Resume" : "Pause";
+        if (paused) {
+          renderOverlay();
+        } else {
+          hideOverlay();
         }
         draw();
+      }
+
+      function togglePause() {
+        if (state === "running") setPaused(true);
+        else if (state === "paused") setPaused(false);
       }
 
       function endGame(won) {
         state = won ? "won" : "over";
         pauseBtn.disabled = true;
-        overlayTitle.textContent = won ? "You win!" : "Game Over";
-        overlayMessage.textContent = won
-          ? "You cleared every brick!"
-          : "Final score " + score + ". Don't let the ball fall!";
-        startBtn.textContent = "Play Again";
-        overlay.classList.remove("hidden");
         saveBest();
+        renderOverlay();
         draw();
       }
 
       function saveBest() {
         if (score > best) {
           best = score;
+          newBestThisRun = true;
           bestEl.textContent = best;
           localStorage.setItem("rainbow-blocks-best", String(best));
         }
+      }
+
+      function spawnPopup(px, py, text) {
+        const scale = boardWrap.clientWidth / W;
+        const el = document.createElement("span");
+        el.className = "popup";
+        el.textContent = text;
+        el.style.left = px * scale + "px";
+        el.style.top = py * scale + "px";
+        boardWrap.appendChild(el);
+        setTimeout(() => el.remove(), 850);
       }
 
       function update() {
@@ -322,7 +509,13 @@
         if (ball.x - BALL_R <= 0 || ball.x + BALL_R >= W) ballDx = -ballDx;
         if (ball.y - BALL_R <= 0) ballDy = -ballDy;
 
-        if (ballDy > 0 && ball.y + BALL_R >= PADDLE_Y && ball.y + BALL_R <= PADDLE_Y + PADDLE_H + 4 && ball.x >= paddleX && ball.x <= paddleX + PADDLE_W) {
+        if (
+          ballDy > 0 &&
+          ball.y + BALL_R >= PADDLE_Y &&
+          ball.y + BALL_R <= PADDLE_Y + PADDLE_H + 4 &&
+          ball.x >= paddleX &&
+          ball.x <= paddleX + PADDLE_W
+        ) {
           const offset = (ball.x - (paddleX + PADDLE_W / 2)) / (PADDLE_W / 2);
           ballDx = offset * BALL_SPEED * 1.4;
           ballDy = -Math.abs(ballDy);
@@ -330,11 +523,15 @@
 
         for (let i = bricks.length - 1; i >= 0; i--) {
           const b = bricks[i];
-          if (ball.x + BALL_R >= b.x && ball.x - BALL_R <= b.x + b.w && ball.y + BALL_R >= b.y && ball.y - BALL_R <= b.y + b.h) {
+          if (
+            ball.x + BALL_R >= b.x && ball.x - BALL_R <= b.x + b.w &&
+            ball.y + BALL_R >= b.y && ball.y - BALL_R <= b.y + b.h
+          ) {
             bricks.splice(i, 1);
             ballDy = -ballDy;
             score += 10;
             scoreEl.textContent = score;
+            spawnPopup(b.x + b.w / 2, b.y + b.h / 2, "+10");
           }
         }
 
@@ -365,38 +562,38 @@
         ctx.clearRect(0, 0, W, H);
         for (let y = 0; y < H; y += 16) {
           for (let x = 0; x < W; x += 16) {
-            ctx.fillStyle = (x / 16 + y / 16) % 2 === 0 ? "#0e1729" : "#0b1220";
+            ctx.fillStyle = (x / 16 + y / 16) % 2 === 0 ? "#0d1424" : "#0a101d";
             ctx.fillRect(x, y, 16, 16);
           }
         }
 
         bricks.forEach((b) => {
-          ctx.fillStyle = "hsl(" + Math.round(b.hue) + ", 90%, 55%)";
+          ctx.fillStyle = "hsl(" + Math.round(b.hue) + ", 85%, 56%)";
           ctx.beginPath();
           ctx.roundRect(b.x, b.y, b.w, b.h, 6);
           ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,0.18)";
+          ctx.fillRect(b.x + 4, b.y + 3, b.w - 8, 4);
         });
 
-        ctx.fillStyle = "#94a3b8";
+        ctx.save();
+        ctx.shadowColor = "rgba(148, 163, 184, 0.75)";
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = "#cbd5e1";
         ctx.beginPath();
-        ctx.roundRect(paddleX, PADDLE_Y, PADDLE_W, PADDLE_H, 6);
+        ctx.roundRect(paddleX, PADDLE_Y, PADDLE_W, PADDLE_H, 7);
         ctx.fill();
+        ctx.restore();
 
         if (ball) {
+          ctx.save();
+          ctx.shadowColor = "rgba(248, 250, 252, 0.9)";
+          ctx.shadowBlur = 16;
           ctx.beginPath();
           ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
           ctx.fillStyle = "#f8fafc";
           ctx.fill();
-        }
-
-        if (state === "paused") {
-          ctx.fillStyle = "rgba(11, 18, 32, 0.55)";
-          ctx.fillRect(0, 0, W, H);
-          ctx.fillStyle = "#e2e8f0";
-          ctx.font = "bold 44px system-ui, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("Paused", W / 2, H / 2);
+          ctx.restore();
         }
       }
 
@@ -404,7 +601,6 @@
         paddleX = Math.max(0, Math.min(W - PADDLE_W, x - PADDLE_W / 2));
       }
 
-      // input
       document.addEventListener("keydown", (e) => {
         const key = e.key.toLowerCase();
         if (key === "p") {
@@ -440,9 +636,13 @@
         movePaddle(((e.touches[0].clientX - rect.left) / rect.width) * W);
       }, { passive: false });
 
-      startBtn.addEventListener("click", startGame);
+      startBtn.addEventListener("click", () => {
+        if (state === "paused") setPaused(false);
+        else startGame();
+      });
       pauseBtn.addEventListener("click", togglePause);
 
+      renderOverlay();
       newGame();
       draw();
     })();
