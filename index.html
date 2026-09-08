@@ -499,24 +499,42 @@
         }
       }
 
-      function whoosh(intensity, dur) {
+      function foamCut(intensity, dur, delay) {
         if (muted || !audioCtx || !noiseBuf) return;
         try {
-          const t = audioCtx.currentTime;
+          const t = audioCtx.currentTime + (delay || 0);
+          const length = dur || 0.3;
+
+          // Main bright shear - the "cutting foam" body.
           const src = audioCtx.createBufferSource();
           src.buffer = noiseBuf;
           const filter = audioCtx.createBiquadFilter();
           filter.type = "bandpass";
-          filter.Q.value = 1.2;
-          filter.frequency.setValueAtTime(250, t);
-          filter.frequency.exponentialRampToValueAtTime(2600, t + (dur || 0.18));
+          filter.Q.value = 0.85;
+          filter.frequency.setValueAtTime(800, t);
+          filter.frequency.exponentialRampToValueAtTime(5600, t + length * 0.75);
           const gain = audioCtx.createGain();
           gain.gain.setValueAtTime(0.0001, t);
-          gain.gain.exponentialRampToValueAtTime(intensity || 0.14, t + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.18));
+          gain.gain.exponentialRampToValueAtTime(intensity || 0.35, t + 0.018);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + length);
           src.connect(filter).connect(gain).connect(audioCtx.destination);
           src.start(t);
-          src.stop(t + (dur || 0.18) + 0.05);
+          src.stop(t + length + 0.05);
+
+          // Crisp high snap tail - the foam "crinkle".
+          const snap = audioCtx.createBufferSource();
+          snap.buffer = noiseBuf;
+          const hp = audioCtx.createBiquadFilter();
+          hp.type = "highpass";
+          hp.frequency.value = 2800;
+          const snapGain = audioCtx.createGain();
+          const peak = (intensity || 0.35) * 0.55;
+          snapGain.gain.setValueAtTime(0.0001, t + 0.018);
+          snapGain.gain.exponentialRampToValueAtTime(peak, t + 0.045);
+          snapGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+          snap.connect(hp).connect(snapGain).connect(audioCtx.destination);
+          snap.start(t + 0.018);
+          snap.stop(t + 0.18);
         } catch (e) {
           // ignore
         }
@@ -524,16 +542,16 @@
 
       function sliceSound(perfect) {
         if (perfect) {
-          // Rich, loud ASMR slice + sparkle.
-          whoosh(0.34, 0.38);
-          tone(160, 0.16, "sine", 0.14, 0, 70);
-          tone(1046, 0.16, "sine", 0.1, 0.06);
-          tone(1568, 0.24, "sine", 0.09, 0.12);
-          tone(2093, 0.3, "sine", 0.07, 0.2);
-          whoosh(0.18, 0.22, 0.16);
+          // Big foam cut + sparkle chimes.
+          foamCut(0.6, 0.44);
+          tone(140, 0.2, "sine", 0.18, 0, 60);
+          tone(1046, 0.18, "sine", 0.1, 0.05);
+          tone(1568, 0.26, "sine", 0.09, 0.12);
+          tone(2093, 0.34, "sine", 0.07, 0.2);
+          foamCut(0.3, 0.3, 0.14); // satisfying echo layer
         } else {
-          whoosh(0.16, 0.22);
-          tone(240, 0.1, "triangle", 0.08, 0, 120);
+          foamCut(0.46, 0.32);
+          tone(230, 0.09, "triangle", 0.1, 0, 110);
         }
       }
 
@@ -675,7 +693,7 @@
           bestEl.textContent = best;
           localStorage.setItem("rainbow-tower-best", String(best));
         }
-        whoosh(0.12, 0.3);
+        foamCut(0.16, 0.34);
         tone(180, 0.35, "sawtooth", 0.06, 0, 60);
         showResultOverlay();
         draw();
@@ -702,7 +720,7 @@
           // Complete miss: the whole block tumbles away.
           const y = dropY - BLOCK_H;
           debris.push({ x: moving.x, y, w: moving.w, rot: 0, vr: (Math.random() - 0.5) * 0.3, vy: -1, hue: moving.hue });
-          whoosh(0.2, 0.3);
+          foamCut(0.22, 0.34);
           burst(moving.x + moving.w / 2, y + BLOCK_H, [moving.hue], 18, 2);
           endGame();
           moving = null;
